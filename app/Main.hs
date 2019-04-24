@@ -29,6 +29,9 @@ prompt = do
         makeSureFileExists histFileName
         -- In case of interrupts, handle them instead of exiting shell
         installHandler keyboardSignal (Catch ctrlC) Nothing
+        installHandler sigQUIT (Catch (handleCommand "clear")) Nothing
+        eof <- isEOF
+        handleEOF eof
         command <- getLine
         addCommandToHistory (command ++ "\n")
         -- Handle the incoming command
@@ -39,7 +42,7 @@ handleCommand :: String -> IO()
 -- if exit is typed, we return
 handleCommand command = if command == "exit" then do
                             putStrLn "Bye :)"
-                            return ()
+                            exitSuccess
                         else if canSetVar command then do
                             let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
                             let val = concat values
@@ -52,6 +55,12 @@ handleCommand command = if command == "exit" then do
 
 main :: IO ()
 main =  prompt
+
+handleEOF b = if b then
+              do 
+                  handleCommand "exit" 
+              else
+                putStr("")
 
 ctrlC :: IO ()
 ctrlC = do
