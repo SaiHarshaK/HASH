@@ -7,6 +7,7 @@ import System.Posix.Signals
 import System.Posix.Env
 import Control.Concurrent
 import Data.List.Split
+import Data.Text (strip, pack, unpack)
 import Helpers
 
 builtins :: [String]
@@ -34,7 +35,7 @@ handleCommand command = if command == "exit" then do
                             putStrLn "Bye :)"
                             return ()
                         else if setVar command then do
-                            let (var: _: values) = split (oneOf "=") command
+                            let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
                             let val = concat values
                             setEnv var val True
                             prompt
@@ -57,7 +58,6 @@ setVar varVal = -- check if only one word
                     False
                 else do
                     True
-setVar _ = False
 
 executeLine :: String -> IO ()
 executeLine [] = putStr ""
