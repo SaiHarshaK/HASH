@@ -54,6 +54,7 @@ executable haskell9-exe
     , unix
     , directory
     , process
+    , ansi-terminal
   default-language: Haskell2010
 
 test-suite haskell9-test

@@ -1,6 +1,7 @@
 import System.Process
 import System.Directory
 import System.Posix.User
+import System.Console.ANSI
 import System.IO
 import Helpers
 import Lib
@@ -12,8 +13,12 @@ prompt = do
         userName <- getEffectiveUserName
        	-- print the prompt
         dirPrompt <- getDirPrompt
-        putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
+        setSGR [SetColor Foreground Vivid Yellow]
+        setSGR [SetColor Background Dull Blue]
+        putStr (userName ++ "@hash>" ++ dirPrompt)
         -- flush stdout
+        setSGR [Reset]  -- Reset to default colour scheme
+        putStr(" ")
         hFlush stdout
         makeSureFileExists histFileName
         command <- getLine
