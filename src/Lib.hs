@@ -1,5 +1,5 @@
 module Lib
-    ( 
+    (
         getDirPrompt,
         runBuiltin,
         builtins,
@@ -12,7 +12,9 @@ import System.Process
 import System.Directory
 import System.Posix.User
 import System.IO
+import System.Posix.Env
 import Data.List.Split
+import Data.Text (strip, pack, unpack)
 
 getDirPrompt :: IO String
 getDirPrompt =  do
@@ -39,6 +41,8 @@ runBuiltin :: (String, String) -> IO ()
 runBuiltin ("cd", argString) = changeWorkingDirectory argString
 -- handle history builtin
 runBuiltin ("history", argString) = historyBuiltIn argString
+-- handle unset builtin
+runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
 
 -- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
@@ -48,7 +52,7 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history"]
+builtins = ["cd", "history", "unset"]
 
 -- file to store the history
 histFileName :: String
@@ -80,3 +84,8 @@ addCommandToHistory "" = appendFile histFileName ""
 addCommandToHistory (' ':command) = addCommandToHistory command
 addCommandToHistory ('\n':command) = addCommandToHistory command
 addCommandToHistory command = appendFile histFileName command
+
+-- unset the environment variable
+unsetVar :: [String] -> IO()
+unsetVar ("":[]) = return ()
+unsetVar (command:_) = unsetEnv command

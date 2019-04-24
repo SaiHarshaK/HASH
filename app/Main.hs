@@ -3,15 +3,21 @@ import System.Directory
 import System.Posix.User
 import System.Console.ANSI
 import System.IO
+import System.Exit
+import System.Posix.Signals
+import System.Posix.Env
+import Control.Concurrent
+import Data.List.Split
+import Data.Text (strip, pack, unpack)
 import Helpers
 import Lib
 
 -- The command prompter for the shell
 prompt :: IO ()
 prompt = do
-	-- get the username of the user
+  -- get the username of the user
         userName <- getEffectiveUserName
-       	-- print the prompt
+        -- print the prompt
         dirPrompt <- getDirPrompt
         setSGR [SetColor Foreground Vivid Yellow]
         setSGR [SetColor Background Dull Blue]
@@ -21,6 +27,8 @@ prompt = do
         putStr(" ")
         hFlush stdout
         makeSureFileExists histFileName
+        -- In case of interrupts, handle them instead of exiting shell
+        installHandler keyboardSignal (Catch ctrlC) Nothing
         command <- getLine
         addCommandToHistory (command ++ "\n")
         -- Handle the incoming command
@@ -30,21 +38,30 @@ prompt = do
 handleCommand :: String -> IO()
 -- if exit is typed, we return
 handleCommand command = if command == "exit" then do
-		                	putStrLn "Bye :)"
-		                	return ()
-		                else do 
-		                	-- execute the line of command
-		                    executeLine command
-		                    prompt
+                            putStrLn "Bye :)"
+                            return ()
+                        else if canSetVar command then do
+                            let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
+                            let val = concat values
+                            setEnv var val True
+                            prompt
+                        else do
+                      -- execute the line of command
+                            executeLine command
+                            prompt
 
 main :: IO ()
 main =  prompt
 
+ctrlC :: IO ()
+ctrlC = do
+    putStrLn ""
+    prompt
+
 executeLine :: String -> IO ()
 -- empty command, just print empty string
 executeLine [] = putStr ""
-
-executeLine command = 
+executeLine command =
 	-- check if command is from built-ins
     if elem commandName builtins
     	then runBuiltin ( parseCommand command)
