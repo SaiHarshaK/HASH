@@ -3,6 +3,7 @@ import System.Directory
 import System.Posix.User
 import System.IO
 import Helpers
+import Lib
 
 builtins :: [String]
 builtins = ["cd"]
@@ -13,7 +14,8 @@ prompt = do
 	-- get the username of the user
         userName <- getEffectiveUserName
        	-- print the prompt
-        putStr (userName ++ "@hash> ")
+        dirPrompt <- getDirPrompt
+        putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
         -- flush stdout
         hFlush stdout
         command <- getLine
@@ -35,9 +37,17 @@ main :: IO ()
 main =  prompt
 
 executeLine :: String -> IO ()
+-- empty command, just print empty string
 executeLine [] = putStr ""
-executeLine a = do 
-                system a
-                return ()
 
-
+executeLine command = 
+	-- check if command is from built-ins
+    if elem commandName builtins
+    	then runBuiltin ( parseCommand command)
+    	else do
+    		-- if not built-in command, run as sys command
+    		system command
+    		return ()
+    where
+    	-- parse the command-name out of the string
+    (commandName, args) = parseCommand command
