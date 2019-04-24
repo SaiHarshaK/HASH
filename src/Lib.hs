@@ -4,7 +4,7 @@ module Lib
         runBuiltin,
         builtins,
         makeSureFileExists,
-        histFileName,
+        getHistFile,
         addCommandToHistory
     ) where
 
@@ -50,9 +50,11 @@ changeWorkingDirectory dir  = setCurrentDirectory dir
 builtins :: [String]
 builtins = ["cd", "history"]
 
--- file to store the history
-histFileName :: String
-histFileName = "hist.txt"
+-- Get the path to the user-specific history file
+getHistFile = do
+  user <- getEffectiveUserName
+  let histFilePath = "/home/" ++ user ++ "/.hash_history"
+  return histFilePath
 
 -- function to make sure that a file exists
 makeSureFileExists :: String -> IO()
@@ -65,6 +67,7 @@ makeSureFileExists fileName = do
 -- handle the history builtin
 historyBuiltIn :: String -> IO()
 historyBuiltIn opts = do
+    histFileName <- getHistFile
     makeSureFileExists histFileName
     handle <- openFile histFileName ReadMode
     contents <- hGetContents handle
@@ -76,7 +79,11 @@ historyBuiltIn opts = do
 
 -- validate and add command to history
 addCommandToHistory :: String -> IO()
-addCommandToHistory "" = appendFile histFileName ""
+addCommandToHistory "" = do
+  histFileName <- getHistFile
+  appendFile histFileName ""
 addCommandToHistory (' ':command) = addCommandToHistory command
 addCommandToHistory ('\n':command) = addCommandToHistory command
-addCommandToHistory command = appendFile histFileName command
+addCommandToHistory command = do
+  histFileName <- getHistFile
+  appendFile histFileName command

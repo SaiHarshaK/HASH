@@ -15,6 +15,7 @@ prompt = do
         putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
         -- flush stdout
         hFlush stdout
+        histFileName <- getHistFile
         makeSureFileExists histFileName
         command <- getLine
         addCommandToHistory (command ++ "\n")
