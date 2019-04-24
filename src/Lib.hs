@@ -1,5 +1,5 @@
 module Lib
-    ( 
+    (
         getDirPrompt,
         runBuiltin,
         builtins,

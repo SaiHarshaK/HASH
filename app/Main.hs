@@ -35,7 +35,7 @@ handleCommand :: String -> IO()
 handleCommand command = if command == "exit" then do
                             putStrLn "Bye :)"
                             return ()
-                        else if setVar command then do
+                        else if canSetVar command then do
                             let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
                             let val = concat values
                             setEnv var val True
@@ -47,18 +47,6 @@ handleCommand command = if command == "exit" then do
 
 main :: IO ()
 main =  prompt
-
-countCmds :: String -> Int
-countCmds = length . words
-
-setVar :: String -> Bool
-setVar varVal = -- check if only one word
-                if '=' `notElem` varVal then do
-                    False
-                else if countCmds varVal > 1 then do
-                    False
-                else do
-                    True
 
 ctrlC :: IO ()
 ctrlC = do
