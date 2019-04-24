@@ -4,7 +4,9 @@ import System.Posix.User
 import System.IO
 import System.Exit
 import System.Posix.Signals
+import System.Posix.Env
 import Control.Concurrent
+import Data.List.Split
 import Helpers
 
 builtins :: [String]
@@ -29,15 +31,33 @@ prompt = do
 handleCommand :: String -> IO()
 -- if exit is typed, we return
 handleCommand command = if command == "exit" then do
-                      putStrLn "Bye :)"
-                      return ()
+                            putStrLn "Bye :)"
+                            return ()
+                        else if setVar command then do
+                            let (var: _: values) = split (oneOf "=") command
+                            let val = concat values
+                            setEnv var val True
+                            prompt
                         else do
                       -- execute the line of command
-                        executeLine command
-                        prompt
+                            executeLine command
+                            prompt
 
 main :: IO ()
 main =  prompt
+
+countCmds :: String -> Int
+countCmds = length . words
+
+setVar :: String -> Bool
+setVar varVal = -- check if only one word
+                if '=' `notElem` varVal then do
+                    False
+                else if countCmds varVal > 1 then do
+                    False
+                else do
+                    True
+setVar _ = False
 
 executeLine :: String -> IO ()
 executeLine [] = putStr ""
@@ -48,5 +68,4 @@ executeLine a = do
 ctrlC :: IO ()
 ctrlC = do
     putStrLn ""
-    putStrLn "interrupt"
     prompt

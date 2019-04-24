@@ -15,4 +15,5 @@ extra-deps:
 - transformers-compat-0.6.4
 - unbounded-delays-0.1.1.0
 - wcwidth-0.0.2
+- split-0.2.3.3
 resolver: ghc-8.0.2
