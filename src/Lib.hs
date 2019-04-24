@@ -2,12 +2,17 @@ module Lib
     ( 
         getDirPrompt,
         runBuiltin,
+        builtins,
+        makeSureFileExists,
+        histFileName,
+        addCommandToHistory
     ) where
 
 import System.Process
 import System.Directory
 import System.Posix.User
 import System.IO
+import Data.List.Split
 
 getDirPrompt :: IO String
 getDirPrompt =  do
@@ -30,10 +35,48 @@ getDirPrompt =  do
                       | x /= y = getCurrentDirectory
 
 runBuiltin :: (String, String) -> IO ()
+-- handle cd builtin
 runBuiltin ("cd", argString) = changeWorkingDirectory argString
+-- handle history builtin
+runBuiltin ("history", argString) = historyBuiltIn argString
 
+-- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
 changeWorkingDirectory "" = do
                           homeDir <- getHomeDirectory
                           setCurrentDirectory homeDir
 changeWorkingDirectory dir  = setCurrentDirectory dir
+
+builtins :: [String]
+builtins = ["cd", "history"]
+
+-- file to store the history
+histFileName :: String
+histFileName = "hist.txt"
+
+-- function to make sure that a file exists
+makeSureFileExists :: String -> IO()
+makeSureFileExists fileName = do
+   fileExist <- doesFileExist fileName
+   if not fileExist
+   then writeFile fileName ""
+   else return ()
+
+-- handle the history builtin
+historyBuiltIn :: String -> IO()
+historyBuiltIn opts = do
+    makeSureFileExists histFileName
+    handle <- openFile histFileName ReadMode
+    contents <- hGetContents handle
+    let contentsList = splitOn "\n" contents
+    -- putStr (giveOneLine contents)
+    putStr contents
+    hClose handle
+    -- contentsList
+
+-- validate and add command to history
+addCommandToHistory :: String -> IO()
+addCommandToHistory "" = appendFile histFileName ""
+addCommandToHistory (' ':command) = addCommandToHistory command
+addCommandToHistory ('\n':command) = addCommandToHistory command
+addCommandToHistory command = appendFile histFileName command

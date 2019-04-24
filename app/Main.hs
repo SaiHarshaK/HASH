@@ -5,9 +5,6 @@ import System.IO
 import Helpers
 import Lib
 
-builtins :: [String]
-builtins = ["cd"]
-
 -- The command prompter for the shell
 prompt :: IO ()
 prompt = do
@@ -18,7 +15,9 @@ prompt = do
         putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
         -- flush stdout
         hFlush stdout
+        makeSureFileExists histFileName
         command <- getLine
+        addCommandToHistory (command ++ "\n")
         -- Handle the incoming command
         handleCommand command
 
