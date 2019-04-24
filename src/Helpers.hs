@@ -10,7 +10,7 @@ parseCommand = cleanAndSplit ""
   where
     cleanAndSplit :: String -> String -> (String, String)
     -- remove blank space
-    cleanAndSplit "" (' ':ys) = cleanAndSplit ""  ys
+    cleanAndSplit "" (' ':ys) = cleanAndSplit ""  ys 
     -- If empty args, just pass commnad with empty string
     -- as arguments
     cleanAndSplit accum ""       = (reverse accum, "")

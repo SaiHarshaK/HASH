@@ -9,9 +9,7 @@ import Control.Concurrent
 import Data.List.Split
 import Data.Text (strip, pack, unpack)
 import Helpers
-
-builtins :: [String]
-builtins = ["cd"]
+import Lib
 
 -- The command prompter for the shell
 prompt :: IO ()
@@ -19,12 +17,15 @@ prompt = do
   -- get the username of the user
         userName <- getEffectiveUserName
         -- print the prompt
-        putStr (userName ++ "@hash> ")
+        dirPrompt <- getDirPrompt
+        putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
         -- flush stdout
         hFlush stdout
+        makeSureFileExists histFileName
         -- In case of interrupts, handle them instead of exiting shell
         installHandler keyboardSignal (Catch ctrlC) Nothing
         command <- getLine
+        addCommandToHistory (command ++ "\n")
         -- Handle the incoming command
         handleCommand command
 
@@ -59,13 +60,22 @@ setVar varVal = -- check if only one word
                 else do
                     True
 
-executeLine :: String -> IO ()
-executeLine [] = putStr ""
-executeLine a = do
-                system a
-                return ()
-
 ctrlC :: IO ()
 ctrlC = do
     putStrLn ""
     prompt
+
+executeLine :: String -> IO ()
+-- empty command, just print empty string
+executeLine [] = putStr ""
+executeLine command =
+	-- check if command is from built-ins
+    if elem commandName builtins
+    	then runBuiltin ( parseCommand command)
+    	else do
+    		-- if not built-in command, run as sys command
+    		system command
+    		return ()
+    where
+    	-- parse the command-name out of the string
+    (commandName, args) = parseCommand command
