@@ -30,3 +30,4 @@ canSetVar varVal = -- check if only one word
                     False
                 else do
                     True
+

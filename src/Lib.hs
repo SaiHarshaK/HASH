@@ -4,7 +4,6 @@ module Lib
         runBuiltin,
         builtins,
         makeSureFileExists,
-        histFileName,
         addCommandToHistory
     ) where
 
@@ -55,8 +54,8 @@ builtins :: [String]
 builtins = ["cd", "history", "unset"]
 
 -- file to store the history
-histFileName :: String
-histFileName = "hist.txt"
+-- histFileName :: String
+-- histFileName = "hist.txt"
 
 -- function to make sure that a file exists
 makeSureFileExists :: String -> IO()
@@ -69,6 +68,8 @@ makeSureFileExists fileName = do
 -- handle the history builtin
 historyBuiltIn :: String -> IO()
 historyBuiltIn opts = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
     makeSureFileExists histFileName
     handle <- openFile histFileName ReadMode
     contents <- hGetContents handle
@@ -80,10 +81,22 @@ historyBuiltIn opts = do
 
 -- validate and add command to history
 addCommandToHistory :: String -> IO()
-addCommandToHistory "" = appendFile histFileName ""
-addCommandToHistory (' ':command) = addCommandToHistory command
-addCommandToHistory ('\n':command) = addCommandToHistory command
-addCommandToHistory command = appendFile histFileName command
+addCommandToHistory "" = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    appendFile histFileName ""
+addCommandToHistory (' ':command) = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    addCommandToHistory command
+addCommandToHistory ('\n':command) = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    addCommandToHistory command
+addCommandToHistory command = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    appendFile histFileName command
 
 -- unset the environment variable
 unsetVar :: [String] -> IO()

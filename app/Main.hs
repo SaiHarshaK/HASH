@@ -19,6 +19,7 @@ prompt = do
         userName <- getEffectiveUserName
         -- print the prompt
         dirPrompt <- getDirPrompt
+        homeDir <- getHomeDirectory
         setSGR [SetColor Foreground Vivid Yellow]
         setSGR [SetColor Background Dull Blue]
         putStr (userName ++ "@hash>" ++ dirPrompt)
@@ -26,10 +27,9 @@ prompt = do
         setSGR [Reset]  -- Reset to default colour scheme
         putStr(" ")
         hFlush stdout
-        makeSureFileExists histFileName
+        makeSureFileExists (homeDir ++ "/hist.txt")
         -- In case of interrupts, handle them instead of exiting shell
         installHandler keyboardSignal (Catch ctrlC) Nothing
-        installHandler sigQUIT (Catch (handleCommand "clear")) Nothing
         eof <- isEOF
         handleEOF eof
         command <- getLine
@@ -43,6 +43,8 @@ handleCommand :: String -> IO()
 handleCommand command = if command == "exit" then do
                             putStrLn "Bye :)"
                             exitSuccess
+                        else if command == "L" then do
+                            handleCommand "clear"
                         else if canSetVar command then do
                             let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
                             let val = concat values
