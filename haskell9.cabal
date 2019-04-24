@@ -47,6 +47,9 @@ executable haskell9-exe
   build-depends:
       base >=4.7 && <5
     , haskell9
+    , unix
+    , directory
+    , process
   default-language: Haskell2010
 
 test-suite haskell9-test
