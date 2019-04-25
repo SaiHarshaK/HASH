@@ -2,17 +2,31 @@ import Control.Monad.Trans
 import System.Process
 import System.Directory
 import System.Posix.User
+import System.Console.ANSI
 import System.Console.Haskeline
 import System.IO
+import System.Exit
+import System.Posix.Signals
+import System.Posix.Env
+import Control.Concurrent
+import Data.List.Split
+import Data.Text (strip, pack, unpack)
 import Helpers
 import Lib
+import GitConfigParser
 
 type REPL a = InputT IO a
 
 prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
+  setSGR [SetColor Foreground Vivid Yellow]
+  setSGR [SetColor Background Dull Blue]
+  installHandler keyboardSignal (Catch ctrlC) Nothing
+  eof <- isEOF
+  handleEOF eof
   inpLine <- getInputLine promptText
+  setSGR [Reset]
   case inpLine of
     Nothing -> outputStrLn "Exit."
     -- Do not recursively call the REPL again, when exiting
@@ -23,8 +37,14 @@ prompt = do
 getUserPrompt = do
   userName <- getEffectiveUserName
   dirPrompt <- getDirPrompt
-  return (userName ++ "@hash (" ++ dirPrompt ++ ") $ ")
-
+  isGit <- isGitRepository
+  if isGit then
+	do
+		branch <- getBranch
+		return (userName ++ "@hash (" ++ dirPrompt ++ ") (" ++ branch ++ ") $ ")
+	else
+		return (userName ++ "@hash (" ++ dirPrompt ++ ") $ ")
+		
 -- Handle the command entered in prompt
 handleCommand :: String -> IO()
 handleCommand command = do
@@ -32,11 +52,21 @@ handleCommand command = do
   -- execute the line of command
   executeLine command
 
+handleEOF b = if b then
+              do 
+                  handleCommand "exit" 
+              else
+                putStr("")
+
+ctrlC :: IO ()
+ctrlC = do
+    putStrLn ""
+    prompt
+
 executeLine :: String -> IO ()
 -- empty command, just print empty string
 executeLine [] = putStr ""
-
-executeLine command = 
+executeLine command =
 	-- check if command is from built-ins
     if elem commandName builtins
     	then runBuiltin ( parseCommand command)
