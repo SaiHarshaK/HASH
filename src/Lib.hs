@@ -13,6 +13,7 @@ import System.Posix.User
 import System.IO
 import System.Posix.Env
 import Data.List.Split
+import GitConfigParser
 import Data.Text (strip, pack, unpack)
 
 getDirPrompt :: IO String
@@ -37,12 +38,17 @@ getDirPrompt =  do
 
 runBuiltin :: (String, String) -> IO ()
 -- handle cd builtin
-runBuiltin ("cd", argString) = changeWorkingDirectory argString
+runBuiltin ("cd", argString) = do
+  dirExists <- check doesDirectoryExist argString
+  if dirExists || argString == "" then do
+   changeWorkingDirectory argString
+  else
+    putStr ""
 -- handle history builtin
 runBuiltin ("history", argString) = historyBuiltIn argString
 -- handle unset builtin
 runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
-
+runBuiltin ("help", argString) = help argString
 -- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
 changeWorkingDirectory "" = do
@@ -51,7 +57,7 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history", "unset"]
+builtins = ["cd", "history", "unset", "help"]
 
 -- file to store the history
 -- histFileName :: String
@@ -102,3 +108,13 @@ addCommandToHistory command = do
 unsetVar :: [String] -> IO()
 unsetVar ("":[]) = return ()
 unsetVar (command:_) = unsetEnv command
+
+help :: String -> IO()
+help "" = do putStr(helpString "all")
+
+helpString :: String -> String
+helpString "builtins" = "Builtins :\n help: Displays this text\n cd: Change working Directory,\n history: Display previous commands entered\n"
+-- format for adding to help
+-- helpString "<type>" = "<details>"
+--  then add to help all using ++
+helpString "all" = helpString "builtins"

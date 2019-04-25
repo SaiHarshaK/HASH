@@ -7,7 +7,6 @@ import Data.Maybe
 import Data.List.Split
 import Helpers
 
-
 getLines :: FilePath -> IO [String]
 getLines path = do
                     contents <- readFile path
