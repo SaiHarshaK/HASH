@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      GitConfigParser
       Helpers
       Lib
   other-modules:

@@ -11,6 +11,7 @@ import Data.List.Split
 import Data.Text (strip, pack, unpack)
 import Helpers
 import Lib
+import GitConfigParser
 
 -- The command prompter for the shell
 prompt :: IO ()
@@ -20,10 +21,19 @@ prompt = do
         -- print the prompt
         dirPrompt <- getDirPrompt
         homeDir <- getHomeDirectory
+        isGit <- isGitRepository
         setSGR [SetColor Foreground Vivid Yellow]
         setSGR [SetColor Background Dull Blue]
-        putStr (userName ++ "@hash>" ++ dirPrompt)
+        putStr (userName ++ "@hash>" ++ dirPrompt ++ " ")
         -- flush stdout
+        setSGR [SetColor Background Dull Red]
+        if isGit then
+            do
+                branch <- getBranch
+                putStr(branch)
+
+            else
+                putStr("")
         setSGR [Reset]  -- Reset to default colour scheme
         putStr(" ")
         hFlush stdout
