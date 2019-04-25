@@ -39,6 +39,8 @@ library
     , directory
     , process
     , split
+    , mtl
+    , haskeline
   default-language: Haskell2010
 
 executable haskell9-exe
@@ -54,7 +56,9 @@ executable haskell9-exe
     , unix
     , directory
     , process
-  default-language: Haskell2010
+    , mtl
+    , haskeline
+ default-language: Haskell2010
 
 test-suite haskell9-test
   type: exitcode-stdio-1.0

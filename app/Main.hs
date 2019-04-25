@@ -1,40 +1,36 @@
+import Control.Monad.Trans
 import System.Process
 import System.Directory
 import System.Posix.User
+import System.Console.Haskeline
 import System.IO
 import Helpers
 import Lib
 
--- The command prompter for the shell
-prompt :: IO ()
+type REPL a = InputT IO a
+
+prompt :: REPL()
 prompt = do
-	-- get the username of the user
-        userName <- getEffectiveUserName
-       	-- print the prompt
-        dirPrompt <- getDirPrompt
-        putStr (userName ++ "@hash>" ++ dirPrompt ++" ")
-        -- flush stdout
-        hFlush stdout
-        histFileName <- getHistFile
-        makeSureFileExists histFileName
-        command <- getLine
-        addCommandToHistory (command ++ "\n")
-        -- Handle the incoming command
-        handleCommand command
+  promptText <- (liftIO $ getUserPrompt)
+  inpLine <- getInputLine promptText
+  case inpLine of
+    Nothing -> outputStrLn "Exit."
+    -- Do not recursively call the REPL again, when exiting
+    Just "exit" -> return()
+    -- Call the REPL recursively for the next command
+    Just command -> (liftIO $ handleCommand command) >> prompt
+
+getUserPrompt = do
+  userName <- getEffectiveUserName
+  dirPrompt <- getDirPrompt
+  return (userName ++ "@hash (" ++ dirPrompt ++ ") $ ")
 
 -- Handle the command entered in prompt
 handleCommand :: String -> IO()
--- if exit is typed, we return
-handleCommand command = if command == "exit" then do
-		                	putStrLn "Bye :)"
-		                	return ()
-		                else do 
-		                	-- execute the line of command
-		                    executeLine command
-		                    prompt
-
-main :: IO ()
-main =  prompt
+handleCommand command = do
+  addCommandToHistory (command ++ "\n")
+  -- execute the line of command
+  executeLine command
 
 executeLine :: String -> IO ()
 -- empty command, just print empty string
@@ -51,3 +47,13 @@ executeLine command =
     where
     	-- parse the command-name out of the string
     (commandName, args) = parseCommand command
+
+main :: IO ()
+main = do
+  -- Check if hist file exists, only on startup
+  -- This file is then re-used, rather than checking
+  -- for the file everytime a command is to be appended
+  histFile <- getHistFile
+  makeSureFileExists histFile
+  -- Run the shell
+  runInputT defaultSettings prompt
