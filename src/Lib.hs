@@ -212,7 +212,7 @@ printContents (x:xs) = do
 	putStr ((show (fileSize status)) ++ "\t") 
 	if isDirectory status
 		then do
-		putStr $ "\x1b[32m" ++ x ++ "\t"
+		putStr $ "\x1b[32m" ++ x ++ "\t" ++ "\x1b[0m"
 		else do
 		putStr $ "\x1b[0m" ++ x ++ "\t"
 	putStrLn ""
