@@ -131,8 +131,11 @@ ls arg = do
     printContents filtered
     else if arg == "-al" then do
     printContents contents
-    else do
+    else if arg == "-a" then do
     printContent contents
+    else do
+    system ("ls " ++ arg)
+    putStr ""
 
 
 printContent :: [String] -> IO()
