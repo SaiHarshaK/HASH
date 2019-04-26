@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: haskell:8
+
+    steps:
+      - checkout
+
+      - run:
+          name: install
+          command: stack solver
+
+      - run:
+          name: build
+          command: stack build
