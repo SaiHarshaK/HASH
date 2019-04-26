@@ -6,7 +6,10 @@ module Lib
         makeSureFileExists,
         getHistFile,
         addCommandToHistory,
-        find
+        find,
+        export,
+        help,
+        canSetVar
     ) where
 
 import System.Process
@@ -53,9 +56,14 @@ runBuiltin ("cd", argString) = do
 runBuiltin ("history", argString) = historyBuiltIn argString
 -- handle unset builtin
 runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
+-- handle find builtin
 runBuiltin ("find", argString) = find argString
+-- handle export builtin
+runBuiltin ("export", argString) = export argString
+-- handle help builtin
 runBuiltin ("help", argString) = help argString
 -- function to change the workind directory
+
 changeWorkingDirectory :: String -> IO ()
 changeWorkingDirectory "" = do
                           homeDir <- getHomeDirectory
@@ -63,7 +71,7 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history", "unset", "help", "find"]
+builtins = ["cd", "history", "unset", "help", "find", "export"]
 
 -- Get the path to the user-specific history file
 getHistFile = do
@@ -187,11 +195,45 @@ findRootPaths path = do
 findPaths :: String -> IO String
 findPaths path = readProcess "find" [path] []
 
+countCmds :: String -> Int
+countCmds = length . words
+
+canSetVar :: String -> Bool
+canSetVar varVal = -- check if only one word
+                if '=' `notElem` varVal then do
+                    False
+                else if countCmds varVal > 1 then do
+                    False
+                else do
+                    True
+
+export :: String -> IO ()
+export argStr = do
+  if canSetVar argStr then do
+    let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ argStr)
+    let val = concat values
+    setEnv var val True
+  else
+    putStrLn "Wrong number of arguments"
+
 help :: String -> IO()
 help "" = do putStr(helpString "all")
 
 helpString :: String -> String
-helpString "builtins" = "Builtins :\n help: Displays this text\n cd: Change working Directory,\n history: Display previous commands entered\n"
+helpString "builtins" = concat
+    [
+      "Builtins :\n ",
+      "help: Displays this text\n ",
+      "cd: Change working Directory\n ",
+      "history: Display previous commands entered\n",
+      "export: set export attribute for variables <export keyword optional>\n ",
+      "unset: unset export attribute for variables\n ",
+      "find: recursively outputs the directory tree rooted at given point",
+      " if expressions are given\n ",
+      "      recursively outputs the matched directory tree at given point with",
+      " the given expressions\n "
+    ]
+
 -- format for adding to help
 -- helpString "<type>" = "<details>"
 --  then add to help all using ++
