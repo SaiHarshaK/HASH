@@ -17,6 +17,7 @@ import System.Posix.Env
 import Data.List.Split
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
+import Data.List
 
 getDirPrompt :: IO String
 getDirPrompt =  do
@@ -51,6 +52,7 @@ runBuiltin ("history", argString) = historyBuiltIn argString
 -- handle unset builtin
 runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
 runBuiltin ("help", argString) = help argString
+runBuiltin ("ls", argString) = ls argString
 -- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
 changeWorkingDirectory "" = do
@@ -59,7 +61,7 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history", "unset", "help"]
+builtins = ["cd", "history", "unset", "help","ls"]
 
 -- Get the path to the user-specific history file
 getHistFile = do
@@ -118,3 +120,30 @@ helpString "builtins" = "Builtins :\n help: Displays this text\n cd: Change work
 -- helpString "<type>" = "<details>"
 --  then add to help all using ++
 helpString "all" = helpString "builtins"
+
+ls :: String -> IO ()
+
+ls arg = do
+  if arg == []
+    then do
+      currDir <- getCurrentDirectory
+      contents <- getDirectoryContents currDir
+      let filtered = filter (not . isPrefixOf ".") contents
+      printContents filtered
+    else do
+      system ("ls " ++ arg)
+      putStr ""
+
+printContents :: [String] -> IO()
+
+printContents [] = putStrLn ""
+
+printContents (x:xs) = do
+  dirExist <- doesDirectoryExist x
+  if dirExist
+    then do
+    putStr $ "\x1b[32m" ++ x ++ "\t"
+    printContents xs
+    else do
+    putStr $ "\x1b[0m" ++ x ++ "\t"
+    printContents xs
