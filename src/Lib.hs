@@ -4,6 +4,7 @@ module Lib
         runBuiltin,
         builtins,
         makeSureFileExists,
+        getHistFile,
         addCommandToHistory
     ) where
 
@@ -15,7 +16,6 @@ import System.Posix.Env
 import Data.List.Split
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
-import Data.List
 
 getDirPrompt :: IO String
 getDirPrompt =  do
@@ -61,9 +61,11 @@ changeWorkingDirectory dir  = setCurrentDirectory dir
 builtins :: [String]
 builtins = ["cd", "history", "unset", "help","ls"]
 
--- file to store the history
--- histFileName :: String
--- histFileName = "hist.txt"
+-- Get the path to the user-specific history file
+getHistFile = do
+  user <- getEffectiveUserName
+  let histFilePath = "/home/" ++ user ++ "/.hash_history"
+  return histFilePath
 
 -- function to make sure that a file exists
 makeSureFileExists :: String -> IO()
@@ -76,8 +78,7 @@ makeSureFileExists fileName = do
 -- handle the history builtin
 historyBuiltIn :: String -> IO()
 historyBuiltIn opts = do
-    homeDir <- getHomeDirectory
-    let histFileName = homeDir ++ "/hist.txt"
+    histFileName <- getHistFile
     makeSureFileExists histFileName
     handle <- openFile histFileName ReadMode
     contents <- hGetContents handle
@@ -90,21 +91,13 @@ historyBuiltIn opts = do
 -- validate and add command to history
 addCommandToHistory :: String -> IO()
 addCommandToHistory "" = do
-    homeDir <- getHomeDirectory
-    let histFileName = homeDir ++ "/hist.txt"
-    appendFile histFileName ""
-addCommandToHistory (' ':command) = do
-    homeDir <- getHomeDirectory
-    let histFileName = homeDir ++ "/hist.txt"
-    addCommandToHistory command
-addCommandToHistory ('\n':command) = do
-    homeDir <- getHomeDirectory
-    let histFileName = homeDir ++ "/hist.txt"
-    addCommandToHistory command
+  histFileName <- getHistFile
+  appendFile histFileName ""
+addCommandToHistory (' ':command) = addCommandToHistory command
+addCommandToHistory ('\n':command) = addCommandToHistory command
 addCommandToHistory command = do
-    homeDir <- getHomeDirectory
-    let histFileName = homeDir ++ "/hist.txt"
-    appendFile histFileName command
+  histFileName <- getHistFile
+  appendFile histFileName command
 
 -- unset the environment variable
 unsetVar :: [String] -> IO()
