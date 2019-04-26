@@ -11,9 +11,12 @@ module Lib
 import System.Process
 import System.Directory
 import System.Posix.User
+import System.Posix.Types
 import System.IO
 import System.Posix.Env
 import Data.List.Split
+import System.Posix.Files
+import System.Posix.Files.ByteString(intersectFileModes)
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
 import Data.List
@@ -118,26 +121,96 @@ helpString "all" = helpString "builtins"
 ls :: String -> IO ()
 
 ls arg = do
+  currDir <- getCurrentDirectory
+  contents <- getDirectoryContents currDir
+  let filtered = filter (not . isPrefixOf ".") contents
   if arg == []
     then do
-      currDir <- getCurrentDirectory
-      contents <- getDirectoryContents currDir
-      let filtered = filter (not . isPrefixOf ".") contents
-      printContents filtered
+    printContent filtered
     else do
-      system ("ls " ++ arg)
-      putStr ""
+    printContents filtered
 
-printContents :: [String] -> IO()
+printContent :: [String] -> IO()
 
-printContents [] = putStrLn ""
+printContent [] = putStrLn ""
 
-printContents (x:xs) = do
+printContent (x:xs) = do
   dirExist <- doesDirectoryExist x
   if dirExist
     then do
     putStr $ "\x1b[32m" ++ x ++ "\t"
-    printContents xs
+    printContent xs
     else do
     putStr $ "\x1b[0m" ++ x ++ "\t"
-    printContents xs
+    printContent xs
+
+
+printContents :: [String] -> IO()
+
+printContents [] = putStr ""
+
+printContents (x:xs) = do
+	status <- getFileStatus x
+	uname <- getUserEntryForID (fileOwner status)
+	gname <- getGroupEntryForID (fileGroup status)
+	if isDirectory status
+		then do
+		putStr "d"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) ownerReadMode == ownerReadMode
+		then do
+		putStr "r"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) ownerWriteMode == ownerWriteMode
+		then do
+		putStr "w"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) ownerExecuteMode == ownerExecuteMode
+		then do
+		putStr "x"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) groupReadMode == groupReadMode
+		then do
+		putStr "r"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) groupWriteMode == groupWriteMode
+		then do
+		putStr "w"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) groupExecuteMode == groupExecuteMode
+		then do
+		putStr "x"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) otherReadMode == otherReadMode
+		then do
+		putStr "r"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) otherWriteMode == otherWriteMode
+		then do
+		putStr "w"
+		else do
+		putStr "-"
+	if intersectFileModes (fileMode status) otherExecuteMode == otherExecuteMode
+		then do
+		putStr "x"
+		else do
+		putStr "-"
+	putStr "\t"
+	putStr ((userName uname) ++ "\t")
+	putStr ((groupName gname) ++ "\t")
+	putStr ((show (fileSize status)) ++ "\t")
+	putStr x
+	putStrLn ""
+	printContents xs
+
+pwd = do
+  currDir <- getCurrentDirectory
+  putStrLn $ "\x1b[32m" ++ currDir
