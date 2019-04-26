@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+module Main where
+
 import Control.Monad.Trans
 import System.Process
 import System.Directory
@@ -21,8 +24,8 @@ prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
   (liftIO $ setSGR [SetColor Foreground Vivid Magenta])
-  (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
   (liftIO $ installHandler keyboardStop (Catch handleInterpt) Nothing)
+  (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
   (liftIO $ putStr promptText)
   (liftIO $ setSGR [Reset])
   inpLine <- getInputLine ""
