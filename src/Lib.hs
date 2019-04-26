@@ -13,8 +13,9 @@ import System.Process
 import System.Directory
 import System.Posix.User
 import System.IO
+import Control.Exception
 import System.Posix.Env
-import Data.List (isPrefixOf, isInfixOf)
+import Data.List (isPrefixOf, isInfixOf, nub)
 import Data.List.Split
 import Data.Strings
 import GitConfigParser
@@ -128,8 +129,9 @@ find argStr = do
     if length arg == 1 then do
       let reqd = filter (isInfixOf exp) (pathList)
       printPath reqd
-    else if length arg > 1 then
-      putStrLn "Only one expression is supported"
+    else if length arg > 1 then do
+      let reqd = [ allReqd | x <- arg, allReqd <- filter (isInfixOf x) (pathList)]
+      printPath . nub $ reqd
     else
       printPath pathList
   else if "~" `isPrefixOf` dir then do
@@ -140,8 +142,9 @@ find argStr = do
     if length arg == 1 then do
       let reqd = filter (isInfixOf exp) (pathList)
       printPath reqd
-    else if length arg > 1 then
-      putStrLn "Only one expression is supported"
+    else if length arg > 1 then do
+      let reqd = [ allReqd | x <- arg, allReqd <- filter (isInfixOf x) (pathList)]
+      printPath . nub $ reqd
     else
       printPath pathList
     --relative
@@ -152,8 +155,9 @@ find argStr = do
     if length arg == 1 then do
       let reqd = filter (isInfixOf exp) (pathList)
       printPath reqd
-    else if length arg > 1 then
-      putStrLn "Only one expression is supported"
+    else if length arg > 1 then do
+      let reqd = [ allReqd | x <- arg, allReqd <- filter (isInfixOf x) (pathList)]
+      printPath . nub $ reqd
     else
       printPath pathList
 
@@ -162,9 +166,22 @@ promptLine prompt = do
     putStr prompt
     getLine
 
+getPassword :: IO String
+getPassword = do
+  putStr "Enter Password: "
+  hFlush stdout
+  pass <- withEcho False getLine
+  putChar '\n'
+  return pass
+
+withEcho :: Bool -> IO a -> IO a
+withEcho echo action = do
+  old <- hGetEcho stdin
+  bracket_ (hSetEcho stdin echo) (hSetEcho stdin old) action
+
 findRootPaths :: String -> IO String
 findRootPaths path = do
-    pass <- promptLine "Enter your Password: "
+    pass <- getPassword
     readProcess "/usr/bin/sudo" ["-S","find",path] (pass ++ "\n")
 
 findPaths :: String -> IO String

@@ -22,7 +22,7 @@ prompt = do
   promptText <- (liftIO $ getUserPrompt)
   (liftIO $ setSGR [SetColor Foreground Vivid Magenta])
   (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
-  (liftIO $ installHandler keyboardStop (Catch handleInterr) Nothing)
+  (liftIO $ installHandler keyboardStop (Catch handleInterpt) Nothing)
   (liftIO $ putStr promptText)
   (liftIO $ setSGR [Reset])
   inpLine <- getInputLine ""
@@ -56,7 +56,7 @@ handleCommand command = do
   else do
 	executeLine command
 
-handleInterr = do
+handleInterpt = do
   putStrLn "\r"
 
 executeLine :: String -> IO ()
