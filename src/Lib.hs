@@ -228,10 +228,7 @@ helpString "builtins" = concat
       "history: Display previous commands entered\n",
       "export: set export attribute for variables <export keyword optional>\n ",
       "unset: unset export attribute for variables\n ",
-      "find: recursively outputs the directory tree rooted at given point",
-      " if expressions are given\n ",
-      "      recursively outputs the matched directory tree at given point with",
-      " the given expressions\n "
+      "find: search for files in a directory hierarchy. <no args lists all files>\n "
     ]
 
 -- format for adding to help
