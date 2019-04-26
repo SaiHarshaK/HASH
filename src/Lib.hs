@@ -27,7 +27,7 @@ import Data.Text (strip, pack, unpack)
 -- | Construct and return Present Working Directory
 --
 -- >>> getDirPrompt
--- ~/Documents/gitLab/haskell-9
+-- ~/haskell-9
 getDirPrompt :: IO String
 getDirPrompt =  do
                   -- current working directory
