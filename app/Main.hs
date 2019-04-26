@@ -9,11 +9,14 @@ import System.Exit
 import System.Posix.Signals
 import System.Posix.Env
 import Control.Concurrent
+import Data.List (elemIndex)
 import Data.List.Split
+import Data.Maybe (fromJust)
 import Data.Text (strip, pack, unpack)
 import Helpers
 import Lib
 import GitConfigParser
+import HashConfigParser
 
 type REPL a = InputT IO a
 
@@ -45,7 +48,17 @@ getUserPrompt = do
 handleCommand :: String -> IO()
 handleCommand command = do
   addCommandToHistory (command ++ "\n")
-  if canSetVar command then do
+
+  confFile <- getConfFile
+  aliasKeywords <- getAliasKeywords confFile
+  aliasDefinitions <- getAliasDefinitions confFile
+  let isAlias = elem command aliasKeywords
+
+  if isAlias then do
+	let aliasIndex = fromJust $ elemIndex command aliasKeywords
+	let aliasDef = aliasDefinitions !! aliasIndex
+	handleCommand aliasDef
+  else if canSetVar command then do
     let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
     let val = concat values
     setEnv var val True
@@ -76,6 +89,8 @@ main = do
   -- This file is then re-used, rather than checking
   -- for the file everytime a command is to be appended
   histFile <- getHistFile
+  confFile <- getConfFile
   makeSureFileExists histFile
+  makeSureFileExists confFile
   -- Run the shell
   runInputT defaultSettings prompt

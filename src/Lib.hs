@@ -5,6 +5,7 @@ module Lib
         builtins,
         makeSureFileExists,
         getHistFile,
+		getConfFile,
         addCommandToHistory
     ) where
 
@@ -65,6 +66,11 @@ getHistFile = do
   user <- getEffectiveUserName
   let histFilePath = "/home/" ++ user ++ "/.hash_history"
   return histFilePath
+
+getConfFile = do
+	user <- getEffectiveUserName
+	let confFilePath = "/home/" ++ user ++ "/.hashrc"
+	return confFilePath
 
 -- function to make sure that a file exists
 makeSureFileExists :: String -> IO()
