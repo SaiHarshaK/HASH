@@ -4,7 +4,6 @@ module Lib
         runBuiltin,
         builtins,
         makeSureFileExists,
-        getHistFile,
         addCommandToHistory
     ) where
 
@@ -16,6 +15,7 @@ import System.Posix.Env
 import Data.List.Split
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
+import Data.List
 
 getDirPrompt :: IO String
 getDirPrompt =  do
@@ -50,6 +50,7 @@ runBuiltin ("history", argString) = historyBuiltIn argString
 -- handle unset builtin
 runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
 runBuiltin ("help", argString) = help argString
+runBuiltin ("ls", argString) = ls argString
 -- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
 changeWorkingDirectory "" = do
@@ -58,13 +59,11 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history", "unset", "help"]
+builtins = ["cd", "history", "unset", "help","ls"]
 
--- Get the path to the user-specific history file
-getHistFile = do
-  user <- getEffectiveUserName
-  let histFilePath = "/home/" ++ user ++ "/.hash_history"
-  return histFilePath
+-- file to store the history
+-- histFileName :: String
+-- histFileName = "hist.txt"
 
 -- function to make sure that a file exists
 makeSureFileExists :: String -> IO()
@@ -77,7 +76,8 @@ makeSureFileExists fileName = do
 -- handle the history builtin
 historyBuiltIn :: String -> IO()
 historyBuiltIn opts = do
-    histFileName <- getHistFile
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
     makeSureFileExists histFileName
     handle <- openFile histFileName ReadMode
     contents <- hGetContents handle
@@ -90,13 +90,21 @@ historyBuiltIn opts = do
 -- validate and add command to history
 addCommandToHistory :: String -> IO()
 addCommandToHistory "" = do
-  histFileName <- getHistFile
-  appendFile histFileName ""
-addCommandToHistory (' ':command) = addCommandToHistory command
-addCommandToHistory ('\n':command) = addCommandToHistory command
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    appendFile histFileName ""
+addCommandToHistory (' ':command) = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    addCommandToHistory command
+addCommandToHistory ('\n':command) = do
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    addCommandToHistory command
 addCommandToHistory command = do
-  histFileName <- getHistFile
-  appendFile histFileName command
+    homeDir <- getHomeDirectory
+    let histFileName = homeDir ++ "/hist.txt"
+    appendFile histFileName command
 
 -- unset the environment variable
 unsetVar :: [String] -> IO()
@@ -112,3 +120,30 @@ helpString "builtins" = "Builtins :\n help: Displays this text\n cd: Change work
 -- helpString "<type>" = "<details>"
 --  then add to help all using ++
 helpString "all" = helpString "builtins"
+
+ls :: String -> IO ()
+
+ls arg = do
+  if arg == []
+    then do
+      currDir <- getCurrentDirectory
+      contents <- getDirectoryContents currDir
+      let filtered = filter (not . isPrefixOf ".") contents
+      printContents filtered
+    else do
+      system ("ls " ++ arg)
+      putStr ""
+
+printContents :: [String] -> IO()
+
+printContents [] = putStrLn ""
+
+printContents (x:xs) = do
+  dirExist <- doesDirectoryExist x
+  if dirExist
+    then do
+    putStr $ "\x1b[32m" ++ x ++ "\t"
+    printContents xs
+    else do
+    putStr $ "\x1b[0m" ++ x ++ "\t"
+    printContents xs
