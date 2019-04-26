@@ -5,7 +5,8 @@ module Lib
         builtins,
         makeSureFileExists,
         getHistFile,
-        addCommandToHistory
+        addCommandToHistory,
+        find
     ) where
 
 import System.Process
@@ -13,7 +14,9 @@ import System.Directory
 import System.Posix.User
 import System.IO
 import System.Posix.Env
+import Data.List (isPrefixOf, isInfixOf)
 import Data.List.Split
+import Data.Strings
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
 
@@ -49,6 +52,7 @@ runBuiltin ("cd", argString) = do
 runBuiltin ("history", argString) = historyBuiltIn argString
 -- handle unset builtin
 runBuiltin ("unset", argString) = unsetVar (words . unpack . strip . pack $ argString)
+runBuiltin ("find", argString) = find argString
 runBuiltin ("help", argString) = help argString
 -- function to change the workind directory
 changeWorkingDirectory :: String -> IO ()
@@ -58,7 +62,7 @@ changeWorkingDirectory "" = do
 changeWorkingDirectory dir  = setCurrentDirectory dir
 
 builtins :: [String]
-builtins = ["cd", "history", "unset", "help"]
+builtins = ["cd", "history", "unset", "help", "find"]
 
 -- Get the path to the user-specific history file
 getHistFile = do
@@ -102,6 +106,69 @@ addCommandToHistory command = do
 unsetVar :: [String] -> IO()
 unsetVar ("":[]) = return ()
 unsetVar (command:_) = unsetEnv command
+
+printPath :: [String] -> IO ()
+printPath (sugg:[]) = putStr $ id sugg
+printPath (sugg:suggList) = do
+                putStrLn $ id sugg
+                printPath suggList
+
+find :: String -> IO ()
+find argStr = do
+  let argList = filter (not . null) (strSplitAll " " argStr)
+      dir = head argList
+      arg = tail argList
+      exp = last argList
+  absPath <- makeAbsolute dir
+  -- if '/' is the prefix
+  if "/" `isPrefixOf` dir then do
+    possiblePath <- findRootPaths absPath
+    let path = dir
+        pathList = strSplitAll "\n" possiblePath
+    if length arg == 1 then do
+      let reqd = filter (isInfixOf exp) (pathList)
+      printPath reqd
+    else if length arg > 1 then
+      putStrLn "Only one expression is supported"
+    else
+      printPath pathList
+  else if "~" `isPrefixOf` dir then do
+    user <- getEffectiveUserName
+    let absPath = strReplace "~" ("/home/" ++ user) dir
+    paths <- findPaths absPath
+    let pathList = strSplitAll "\n" paths
+    if length arg == 1 then do
+      let reqd = filter (isInfixOf exp) (pathList)
+      printPath reqd
+    else if length arg > 1 then
+      putStrLn "Only one expression is supported"
+    else
+      printPath pathList
+    --relative
+  else do
+    absPath <- makeAbsolute dir
+    paths <- findPaths absPath
+    let pathList = strSplitAll "\n" paths
+    if length arg == 1 then do
+      let reqd = filter (isInfixOf exp) (pathList)
+      printPath reqd
+    else if length arg > 1 then
+      putStrLn "Only one expression is supported"
+    else
+      printPath pathList
+
+promptLine :: String -> IO String
+promptLine prompt = do
+    putStr prompt
+    getLine
+
+findRootPaths :: String -> IO String
+findRootPaths path = do
+    pass <- promptLine "Enter your Password: "
+    readProcess "/usr/bin/sudo" ["-S","find",path] (pass ++ "\n")
+
+findPaths :: String -> IO String
+findPaths path = readProcess "find" [path] []
 
 help :: String -> IO()
 help "" = do putStr(helpString "all")

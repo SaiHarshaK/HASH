@@ -21,7 +21,8 @@ prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
   (liftIO $ setSGR [SetColor Foreground Vivid Magenta])
-  (liftIO $ installHandler keyboardSignal (Catch ctrlC) Nothing)
+  (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
+  (liftIO $ installHandler keyboardStop (Catch handleInterr) Nothing)
   (liftIO $ putStr promptText)
   (liftIO $ setSGR [Reset])
   inpLine <- getInputLine ""
@@ -43,7 +44,7 @@ getUserPrompt = do
 		return (userName ++ "@hash (" ++ dirPrompt ++ ") (" ++ branch ++ ") $ ")
 	else
 		return (userName ++ "@hash (" ++ dirPrompt ++ ") $ ")
-		
+
 -- Handle the command entered in prompt
 handleCommand :: String -> IO()
 handleCommand command = do
@@ -55,7 +56,7 @@ handleCommand command = do
   else do
 	executeLine command
 
-ctrlC = do
+handleInterr = do
   putStrLn "\r"
 
 executeLine :: String -> IO ()
