@@ -127,8 +127,11 @@ ls arg = do
   if arg == []
     then do
     printContent filtered
-    else do
+    else if arg == "-l" then do
     printContents filtered
+    else do
+    printContent contents
+
 
 printContent :: [String] -> IO()
 
@@ -206,8 +209,12 @@ printContents (x:xs) = do
 	putStr "\t"
 	putStr ((userName uname) ++ "\t")
 	putStr ((groupName gname) ++ "\t")
-	putStr ((show (fileSize status)) ++ "\t")
-	putStr x
+	putStr ((show (fileSize status)) ++ "\t") 
+	if isDirectory status
+		then do
+		putStr $ "\x1b[32m" ++ x ++ "\t"
+		else do
+		putStr $ "\x1b[0m" ++ x ++ "\t"
 	putStrLn ""
 	printContents xs
 
