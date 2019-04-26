@@ -20,11 +20,8 @@ type REPL a = InputT IO a
 prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
-  (liftIO $ setSGR [SetColor Foreground Vivid Magenta])
   (liftIO $ installHandler keyboardSignal (Catch ctrlC) Nothing)
-  (liftIO $ putStr promptText)
-  (liftIO $ setSGR [Reset])
-  inpLine <- getInputLine ""
+  inpLine <- getInputLine ("\ESC[1;35m\STX" ++ promptText ++ "\ESC[0m\STX")
   case inpLine of
 	-- Exit on encountering EOF
     Nothing -> outputStrLn "Leaving Hash."
@@ -56,7 +53,7 @@ handleCommand command = do
 	executeLine command
 
 ctrlC = do
-  putStrLn "\r"
+  putStrLn ""
 
 executeLine :: String -> IO ()
 -- empty command, just print empty string
@@ -75,7 +72,7 @@ executeLine command =
 
 main :: IO ()
 main = do
-  -- Check if hist file exists, only on startup
+  -- Check if hist file exists only on startup
   -- This file is then re-used, rather than checking
   -- for the file everytime a command is to be appended
   histFile <- getHistFile
