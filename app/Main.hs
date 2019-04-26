@@ -20,15 +20,14 @@ type REPL a = InputT IO a
 prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
-  setSGR [SetColor Foreground Vivid Yellow]
-  setSGR [SetColor Background Dull Blue]
-  installHandler keyboardSignal (Catch ctrlC) Nothing
-  eof <- isEOF
-  handleEOF eof
-  inpLine <- getInputLine promptText
-  setSGR [Reset]
+  (liftIO $ setSGR [SetColor Foreground Vivid Magenta])
+  (liftIO $ installHandler keyboardSignal (Catch ctrlC) Nothing)
+  (liftIO $ putStr promptText)
+  (liftIO $ setSGR [Reset])
+  inpLine <- getInputLine ""
   case inpLine of
-    Nothing -> outputStrLn "Exit."
+	-- Exit on encountering EOF
+    Nothing -> outputStrLn "Leaving Hash."
     -- Do not recursively call the REPL again, when exiting
     Just "exit" -> return()
     -- Call the REPL recursively for the next command
@@ -49,19 +48,15 @@ getUserPrompt = do
 handleCommand :: String -> IO()
 handleCommand command = do
   addCommandToHistory (command ++ "\n")
-  -- execute the line of command
-  executeLine command
+  if canSetVar command then do
+    let (var: _: values) = split (oneOf "=") (unpack . strip . pack $ command)
+    let val = concat values
+    setEnv var val True
+  else do
+	executeLine command
 
-handleEOF b = if b then
-              do 
-                  handleCommand "exit" 
-              else
-                putStr("")
-
-ctrlC :: IO ()
 ctrlC = do
-    putStrLn ""
-    prompt
+  putStrLn "\r"
 
 executeLine :: String -> IO ()
 -- empty command, just print empty string
