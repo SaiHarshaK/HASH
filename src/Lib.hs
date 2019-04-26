@@ -129,6 +129,8 @@ ls arg = do
     printContent filtered
     else if arg == "-l" then do
     printContents filtered
+    else if arg == "-al" then do
+    printContents contents
     else do
     printContent contents
 
