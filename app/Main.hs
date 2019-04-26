@@ -23,14 +23,13 @@ type REPL a = InputT IO a
 prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
-  (liftIO $ installHandler keyboardStop (Catch handleInterpt) Nothing)
   (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
   inpLine <- getInputLine ("\ESC[1;35m\STX" ++ promptText ++ "\ESC[0m\STX")
   case inpLine of
 	-- Exit on encountering EOF
     Nothing -> outputStrLn "Leaving Hash."
     -- Do not recursively call the REPL again, when exiting
-    Just "exit" -> return()
+    Just "exit" -> return ()
     -- Call the REPL recursively for the next command
     Just command -> (liftIO $ handleCommand command) >> prompt
 
@@ -56,8 +55,8 @@ handleCommand command = do
   else do
 	executeLine command
 
-handleInterpt = do
-  putStr ""
+handleInterpt :: IO ()
+handleInterpt = putStr " "
 
 executeLine :: String -> IO ()
 -- empty command, just print empty string

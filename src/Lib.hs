@@ -178,7 +178,7 @@ unsetVar (command:_) = unsetEnv command
 -- >>> how-are-you?
 printPath :: [String] -- ^ List of Strings
              -> IO ()
-printPath (sugg:[]) = putStr $ id sugg
+printPath (sugg:[]) = putStrLn $ id sugg
 printPath (sugg:suggList) = do
                 putStrLn $ id sugg
                 printPath suggList
@@ -232,7 +232,7 @@ findPaths path = readProcess "find" [path] []
 -- /home/harsha/haskell-9/src/hist.txt
 find :: String -- ^ String to be Parsed
         -> IO ()
-find "" = putStrLn "Yass"
+find "" = putStrLn "Incorrect arguments"
 find argStr = do
   let argList = filter (not . null) (strSplitAll " " argStr)
       dir = head argList
