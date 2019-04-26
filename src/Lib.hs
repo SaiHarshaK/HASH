@@ -16,6 +16,7 @@ import System.Posix.Env
 import Data.List.Split
 import GitConfigParser
 import Data.Text (strip, pack, unpack)
+import Data.List
 
 getDirPrompt :: IO String
 getDirPrompt =  do
