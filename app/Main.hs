@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+module Main where
+
 import Control.Monad.Trans
 import System.Process
 import System.Directory
@@ -23,13 +26,13 @@ type REPL a = InputT IO a
 prompt :: REPL()
 prompt = do
   promptText <- (liftIO $ getUserPrompt)
-  (liftIO $ installHandler keyboardSignal (Catch ctrlC) Nothing)
+  (liftIO $ installHandler keyboardSignal (Catch handleInterpt) Nothing)
   inpLine <- getInputLine ("\ESC[1;35m\STX" ++ promptText ++ "\ESC[0m\STX")
   case inpLine of
 	-- Exit on encountering EOF
     Nothing -> outputStrLn "Leaving Hash."
     -- Do not recursively call the REPL again, when exiting
-    Just "exit" -> return()
+    Just "exit" -> return ()
     -- Call the REPL recursively for the next command
     Just command -> (liftIO $ handleCommand command) >> prompt
 
@@ -43,7 +46,7 @@ getUserPrompt = do
 		return (userName ++ "@hash (" ++ dirPrompt ++ ") (" ++ branch ++ ") $ ")
 	else
 		return (userName ++ "@hash (" ++ dirPrompt ++ ") $ ")
-		
+
 -- Handle the command entered in prompt
 handleCommand :: String -> IO()
 handleCommand command = do
@@ -65,8 +68,8 @@ handleCommand command = do
   else do
 	executeLine command
 
-ctrlC = do
-  putStrLn ""
+handleInterpt :: IO ()
+handleInterpt = putStr ""
 
 executeLine :: String -> IO ()
 -- empty command, just print empty string
